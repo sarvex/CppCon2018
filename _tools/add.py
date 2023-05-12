@@ -14,14 +14,14 @@ def shell_call(cmd):
     process = subprocess.Popen(cmd, shell=True)
     process.wait()
     if process.returncode:
-        print("'{}' failed.".format(cmd))
+        print(f"'{cmd}' failed.")
         print("Exit code:", process.returncode)
 
         exit(process.returncode)
 
 
 def add_index(readme, category):
-    readme.write("\n## {}\n\n".format(category))
+    readme.write(f"\n## {category}\n\n")
     generate_index(readme, category)
 
 
@@ -45,8 +45,7 @@ def generate_entry(readme, path):
     def md_path(path):
         return quote(normpath(path).replace('\\', '/'))
 
-    presentation_regex = re.compile("__cppcon_" + str(CPPCON_YEAR) +
-                                    "\\.[^.]*$")
+    presentation_regex = re.compile((f"__cppcon_{str(CPPCON_YEAR)}" + "\\.[^.]*$"))
     pdf_regex = re.compile("\\.pdf$", flags=re.I)
     readme_md_regex = re.compile("README\\.md$")
 
@@ -122,14 +121,13 @@ def generate_index(readme, path):
 
 
 def add_presentation(path):
+    session = ""
     SESSION_MAP = {
         'p': 'Presentations',
         'k': 'Keynotes',
         'l': 'Lightning Talks and Lunch Sessions',
-        'o': 'Posters'
+        'o': 'Posters',
     }
-
-    session = ""
     while not session or session not in SESSION_MAP.keys():
         session = input("[P]resentation, [K]eynote, " +
                         "[L]ighting/Lunch, P[o]ster? ").lower()
@@ -145,19 +143,17 @@ def add_presentation(path):
 
         with open(filename, mode='r', encoding="utf8") as readme:
             heading = readme.readline()
-            match = readme_header_regex.match(heading)
-
-            if match:
-                title = match.group(1)
-                author = match.group(2)
+            if match := readme_header_regex.match(heading):
+                title = match[1]
+                author = match[2]
     else:
-        title_author_regex = re.compile("(.*) - (.*) - CppCon " +
-                                        str(CPPCON_YEAR) + r"\.[^.]*$")
+        title_author_regex = re.compile(
+            f"(.*) - (.*) - CppCon {str(CPPCON_YEAR)}" + r"\.[^.]*$"
+        )
 
-        title_author_match = title_author_regex.search(filename)
-        if title_author_match:
-            title = title_author_match.group(1)
-            author = title_author_match.group(2)
+        if title_author_match := title_author_regex.search(filename):
+            title = title_author_match[1]
+            author = title_author_match[2]
 
         print("\nExtension is", ext)
 
@@ -186,8 +182,7 @@ def add_presentation(path):
     file_author = ''.join([c for c in file_author if c.isalnum() or c == '_'])
 
     if filename != 'README.md':
-        new_filename = "{}__{}__cppcon_{}{}".format(file_title, file_author,
-            CPPCON_YEAR, ext)
+        new_filename = f"{file_title}__{file_author}__cppcon_{CPPCON_YEAR}{ext}"
         ok = ''
         while ok != 'y':
             print("\n\nFilename:", new_filename)
@@ -197,27 +192,27 @@ def add_presentation(path):
                 new_filename = input("Filename: ")
                 new_name, new_ext = splitext(new_filename)
 
-                title_author_regex = re.compile("(.*)__(.*)__cppcon_" +
-                                    str(CPPCON_YEAR) + r"\.[^.]*$")
+                title_author_regex = re.compile(
+                    f"(.*)__(.*)__cppcon_{str(CPPCON_YEAR)}" + r"\.[^.]*$"
+                )
 
                 title_author_match = title_author_regex.search(new_filename)
                 if not title_author_match:
                     print("Cannot parse title and author from new filename")
                 elif not all((c.isalnum() or c == '_') for c in new_name):
-                    print("Filename contains non-alphanumeric characters. (" +
-                        new_filename + ")")
+                    print(f"Filename contains non-alphanumeric characters. ({new_filename})")
                 elif new_ext != ext:
                     print("New file extension does not match original file" +
                         "extension")
                 else:
-                    file_title = title_author_match.group(1)
+                    file_title = title_author_match[1]
                     ok = ''
     else:
         new_filename = filename
         contents = None
         with open(filename, mode='r', encoding="utf8") as readme:
             contents = readme.readlines()
-        contents[0] = '**{}** by **{}**'.format(title, author)
+        contents[0] = f'**{title}** by **{author}**'
         with open(filename, mode='w', encoding="utf8") as readme:
             readme.writelines(contents)
 
@@ -230,14 +225,14 @@ def add_presentation(path):
             join(new_folder, '.presentation'), mode='w', encoding="utf8") as f:
         dump({'Title': title, 'Author': author}, f)
 
-    shell_call('git add "{}"'.format(new_folder))
+    shell_call(f'git add "{new_folder}"')
 
     return title, author
 
 
 if __name__ == '__main__':
     if not (exists('_tools') and isdir('_tools')):
-        print("Run this from the CppCon{} root.".format(CPPCON_YEAR))
+        print(f"Run this from the CppCon{CPPCON_YEAR} root.")
         exit(1)
 
     TITLE = None
@@ -250,6 +245,6 @@ if __name__ == '__main__':
 
     shell_call('git add README.md')
     if TITLE and AUTHOR:
-        shell_call('git commit -v -m "Add {} by {}" -e'.format(TITLE, AUTHOR))
+        shell_call(f'git commit -v -m "Add {TITLE} by {AUTHOR}" -e')
     else:
         shell_call('git commit -v -m "Updating index" -e')
